@@ -161,6 +161,21 @@ uint16_t bw = 125;
 uint32_t freq = 868100000; // in Mhz! (868.1)
 uint32_t freq_2 = 868300000; // in Mhz! (868.3)
 
+// Tx Power Register
+#define REG_PA_CFG 0x09
+// Power Setting for Japan ARIB STD-T108
+// 20mW=13dBm
+// SX1276 RegPaConfig(0x09), Val=0x3f
+// bit 7 PaSelect = 0 select RFO
+// bit 6-4 MaxPower = 3 Pmax=10.8+0.6*3=12.6 < 13
+// bit 3-0 OutputPower = 0x0f Pout=Pmax-(15-0x0f)=12.6
+// SX1272 RegPaConfig(0x09), Val=0x0e
+// bit 7 PaSelect = 0 select RFO
+// bit 6-4 unused = 0
+// bit 3-0 OutputPower = 0xe Pout=-1 + OutputPower = -1 + 0x0e = 13dBm
+int PWR_JPN_1276 = 0x3f;
+int PWR_JPN_1272 = 0xe;
+
 // Servers
 vector<Server_t> servers;
 
@@ -415,6 +430,19 @@ void SetupLoRa(byte CE)
     WriteRegister(REG_MODEM_CONFIG, 0x72, CE);
     WriteRegister(REG_MODEM_CONFIG2, (sf << 4) | 0x04, CE);
   }
+
+  // Set Tx Power for Japan
+  if (sx1272) {
+    WriteRegister(REG_PA_CFG,PWR_JPN_1272, CE);
+  } else {
+  // sx1276
+    WriteRegister(REG_PA_CFG,PWR_JPN_1276, CE);
+  }
+  if (sf == SF10 || sf == SF11 || sf == SF12) {
+    WriteRegister(REG_SYMB_TIMEOUT_LSB, 0x05, CE);
+  } else {
+    WriteRegister(REG_SYMB_TIMEOUT_LSB, 0x08, CE);
+  }  
 
   if (sf == SF10 || sf == SF11 || sf == SF12) {
     WriteRegister(REG_SYMB_TIMEOUT_LSB, 0x05, CE);
